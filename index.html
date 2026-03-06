@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Hex Collapse</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="gameContainer">
+
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- HUD — visible during gameplay -->
+    <div id="hud" class="hidden">
+      <div class="hud-row">
+        <div class="hud-section hud-left">
+          <div class="hud-label">Score</div>
+          <div id="hudScore" class="hud-value">0</div>
+        </div>
+
+        <div class="hud-section hud-center">
+          <div id="hudLevelName" class="hud-level-name">Level 1</div>
+          <div class="hud-score-target">
+            <div class="score-bar-track">
+              <div id="hudScoreBar" class="score-bar-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-section hud-right">
+          <button id="hudPauseBtn" class="hud-icon-btn" aria-label="Pause" onclick="if(window.game) window.game.pause();">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="4" y="3" width="4" height="14" rx="1" fill="currentColor"/>
+              <rect x="12" y="3" width="4" height="14" rx="1" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="hud-row hud-row-secondary">
+        <div class="hud-gravity-section">
+          <div class="hud-label">Gravity</div>
+          <div class="hud-gravity-group">
+            <div id="hudGravityIndicator" class="gravity-indicator" title="Current gravity direction">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <circle cx="14" cy="14" r="12" stroke="#00ffff" stroke-width="1.5" stroke-opacity="0.4"/>
+                <polygon id="gravityArrow" points="14,6 18,16 14,13 10,16" fill="#00ffff"/>
+              </svg>
+            </div>
+            <div class="gravity-shift-counter">
+              <span id="hudShiftCount" class="shift-count-value">8</span>
+              <span class="hud-label-small">moves to shift</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-next-section">
+          <div class="hud-label">Next</div>
+          <div id="hudNextColors" class="next-colors-row">
+            <div class="next-color-hex" data-index="0"></div>
+            <div class="next-color-hex" data-index="1"></div>
+            <div class="next-color-hex" data-index="2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen-overlay visible">
+      <div class="screen-content start-content">
+        <h1 class="game-title">
+          <span class="title-hex">HEX</span>
+          <span class="title-collapse">COLLAPSE</span>
+        </h1>
+        <p class="game-tagline">Match colors. Shift gravity. Chain reactions.</p>
+        <div class="screen-buttons">
+          <button class="btn btn-primary btn-glow" onclick="if(window.game) window.game.start();">
+            <span class="btn-text">Play</span>
+          </button>
+          <button class="btn btn-secondary" onclick="document.getElementById('startScreen').classList.remove('visible'); document.getElementById('startScreen').classList.add('hidden'); document.getElementById('levelSelect').classList.remove('hidden'); document.getElementById('levelSelect').classList.add('visible');">
+            <span class="btn-text">Level Select</span>
+          </button>
+        </div>
+        <div class="start-hex-decoration">
+          <div class="deco-hex deco-hex-1"></div>
+          <div class="deco-hex deco-hex-2"></div>
+          <div class="deco-hex deco-hex-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pauseMenu" class="screen-overlay hidden">
+      <div class="screen-content pause-content">
+        <h2 class="screen-title">Paused</h2>
+        <div class="screen-buttons">
+          <button class="btn btn-primary" onclick="if(window.game) window.game.resume();">
+            <span class="btn-text">Resume</span>
+          </button>
+          <button class="btn btn-secondary" onclick="if(window.game) window.game.restart();">
+            <span class="btn-text">Restart</span>
+          </button>
+          <button class="btn btn-secondary" onclick="if(window.game) window.game.goToMenu();">
+            <span class="btn-text">Main Menu</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Complete -->
+    <div id="levelComplete" class="screen-overlay hidden">
+      <div class="screen-content complete-content">
+        <h2 class="screen-title complete-title">Level Complete!</h2>
+        <div class="star-rating" id="starRating">
+          <span class="star star-empty" data-star="1"></span>
+          <span class="star star-empty" data-star="2"></span>
+          <span class="star star-empty" data-star="3"></span>
+        </div>
+        <div class="complete-score">
+          <div class="hud-label">Final Score</div>
+          <div id="completeScore" class="score-display">0</div>
+        </div>
+        <div class="screen-buttons">
+          <button class="btn btn-primary btn-glow" onclick="if(window.game) window.game.loadLevel(window.game.currentLevel + 1);">
+            <span class="btn-text">Next Level</span>
+          </button>
+          <button class="btn btn-secondary" onclick="if(window.game) window.game.goToMenu();">
+            <span class="btn-text">Main Menu</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over -->
+    <div id="gameOver" class="screen-overlay hidden">
+      <div class="screen-content gameover-content">
+        <h2 class="screen-title gameover-title">Game Over</h2>
+        <div class="complete-score">
+          <div class="hud-label">Final Score</div>
+          <div id="gameOverScore" class="score-display">0</div>
+        </div>
+        <div class="screen-buttons">
+          <button class="btn btn-primary" onclick="if(window.game) window.game.restart();">
+            <span class="btn-text">Try Again</span>
+          </button>
+          <button class="btn btn-secondary" onclick="if(window.game) window.game.goToMenu();">
+            <span class="btn-text">Main Menu</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Select -->
+    <div id="levelSelect" class="screen-overlay hidden">
+      <div class="screen-content levelselect-content">
+        <h2 class="screen-title">Select Level</h2>
+        <div class="level-grid" id="levelGrid">
+          <button class="level-card" data-level="1" onclick="if(window.game) window.game.loadLevel(1);">
+            <div class="level-number">1</div>
+            <div class="level-name">First Steps</div>
+            <div class="level-stars">
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+            </div>
+          </button>
+          <button class="level-card" data-level="2" onclick="if(window.game) window.game.loadLevel(2);">
+            <div class="level-number">2</div>
+            <div class="level-name">Building Pressure</div>
+            <div class="level-stars">
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+            </div>
+          </button>
+          <button class="level-card" data-level="3" onclick="if(window.game) window.game.loadLevel(3);">
+            <div class="level-number">3</div>
+            <div class="level-name">Wild Card</div>
+            <div class="level-stars">
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+            </div>
+          </button>
+          <button class="level-card locked" data-level="4" onclick="if(window.game) window.game.loadLevel(4);">
+            <div class="level-number">4</div>
+            <div class="level-name">Obstacles & Explosions</div>
+            <div class="level-stars">
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+            </div>
+            <div class="lock-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1a4 4 0 0 0-4 4v2H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-1V5a4 4 0 0 0-4-4zm2 6H6V5a2 2 0 1 1 4 0v2z"/>
+              </svg>
+            </div>
+          </button>
+          <button class="level-card locked" data-level="5" onclick="if(window.game) window.game.loadLevel(5);">
+            <div class="level-number">5</div>
+            <div class="level-name">Anchored Chaos</div>
+            <div class="level-stars">
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+            </div>
+            <div class="lock-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1a4 4 0 0 0-4 4v2H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-1V5a4 4 0 0 0-4-4zm2 6H6V5a2 2 0 1 1 4 0v2z"/>
+              </svg>
+            </div>
+          </button>
+          <button class="level-card locked" data-level="6" onclick="if(window.game) window.game.loadLevel(6);">
+            <div class="level-number">6</div>
+            <div class="level-name">Crumbling Fortress</div>
+            <div class="level-stars">
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+            </div>
+            <div class="lock-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1a4 4 0 0 0-4 4v2H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-1V5a4 4 0 0 0-4-4zm2 6H6V5a2 2 0 1 1 4 0v2z"/>
+              </svg>
+            </div>
+          </button>
+          <button class="level-card locked" data-level="7" onclick="if(window.game) window.game.loadLevel(7);">
+            <div class="level-number">7</div>
+            <div class="level-name">Gravity Storm</div>
+            <div class="level-stars">
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+              <span class="star-sm star-empty"></span>
+            </div>
+            <div class="lock-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1a4 4 0 0 0-4 4v2H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-1V5a4 4 0 0 0-4-4zm2 6H6V5a2 2 0 1 1 4 0v2z"/>
+              </svg>
+            </div>
+          </button>
+        </div>
+        <div class="screen-buttons" style="margin-top: 1.5rem;">
+          <button class="btn btn-secondary" onclick="document.getElementById('levelSelect').classList.remove('visible'); document.getElementById('levelSelect').classList.add('hidden'); document.getElementById('startScreen').classList.remove('hidden'); document.getElementById('startScreen').classList.add('visible');">
+            <span class="btn-text">Back</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Game Scripts (loaded in dependency order) -->
+  <script src="entities.js"></script>
+  <script src="levels.js"></script>
+  <script src="renderer.js"></script>
+  <script src="audio.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
